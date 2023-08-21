@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from weather.views import CreateWeatherRequest
+
 
 urlpatterns = [
+    path("weather/", CreateWeatherRequest.as_view()),
     path("admin/", admin.site.urls),
 ]

@@ -4,4 +4,4 @@ from weather.models import WeatherRequest
 
 @admin.register(WeatherRequest)
 class WeatherRequestAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("id", "user_id", "date")
