@@ -1,3 +1,7 @@
 from django.contrib import admin
+from weather.models import WeatherRequest
 
-# Register your models here.
+
+@admin.register(WeatherRequest)
+class WeatherRequestAdmin(admin.ModelAdmin):
+    pass
