@@ -14,6 +14,7 @@ from weather.values import (
     open_weather_success_mock,
     open_weather_invalid_api_key_mock,
     open_weather_city_not_found_mock,
+    open_weather_rate_limit_mock,
 )
 
 mocked_datetime = datetime.datetime(2023, 8, 20, 1, 20, 30, tzinfo=pytz.utc)
@@ -106,6 +107,11 @@ class OpenWeatherClientTest(TestCase):
             open_weather_city_not_found_mock
         )
 
+        self.rate_limit_mock = Mock(spec=Response)
+        self.rate_limit_mock.raise_for_status.side_effect = HTTPError(
+            open_weather_rate_limit_mock
+        )
+
     @patch("weather.clients.requests.request")
     def test_request_success(self, client_mock):
         client_mock.return_value = self.success_mock
@@ -130,3 +136,12 @@ class OpenWeatherClientTest(TestCase):
             open_weather_cli.get("city_id")
 
         self.assertEqual(str(e.exception), str(open_weather_city_not_found_mock))
+
+    @patch("weather.clients.requests.request")
+    def test_rate_limit(self, client_mock):
+        client_mock.return_value = self.rate_limit_mock
+
+        with self.assertRaises(HTTPError) as e:
+            open_weather_cli.get("city_id")
+
+        self.assertEqual(str(e.exception), str(open_weather_rate_limit_mock))

@@ -367,11 +367,14 @@ open_weather_success_mock = {
     "cod": 200,
 }
 
-
 open_weather_invalid_api_key_mock = {
     "cod": 401,
     "message": "Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.",
 }
 
-
 open_weather_city_not_found_mock = {"cod": "400", "message": "AAAAAA is not a city ID"}
+
+open_weather_rate_limit_mock = {
+    "cod": 429,
+    "message": "Your account is temporary blocked due to exceeding of requests limitation of your subscription type. Please choose the proper subscription https://openweathermap.org/price",
+}
