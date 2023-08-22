@@ -338,3 +338,40 @@ created_weather_request_cities = [
     {"city_id": "3480822"},
     {"city_id": "3480825"},
 ]
+
+
+open_weather_success_mock = {
+    "coord": {"lon": -57.6333, "lat": -32.6833},
+    "weather": [
+        {"id": 800, "main": "Clear", "description": "clear sky", "icon": "01n"}
+    ],
+    "base": "stations",
+    "main": {
+        "temp": 289.99,
+        "feels_like": 290.03,
+        "temp_min": 289.99,
+        "temp_max": 289.99,
+        "pressure": 1001,
+        "humidity": 88,
+        "sea_level": 1001,
+        "grnd_level": 992,
+    },
+    "visibility": 10000,
+    "wind": {"speed": 4.68, "deg": 44, "gust": 13.13},
+    "clouds": {"all": 0},
+    "dt": 1692665478,
+    "sys": {"country": "UY", "sunrise": 1692613299, "sunset": 1692653172},
+    "timezone": -10800,
+    "id": 3439525,
+    "name": "Young",
+    "cod": 200,
+}
+
+
+open_weather_invalid_api_key_mock = {
+    "cod": 401,
+    "message": "Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.",
+}
+
+
+open_weather_city_not_found_mock = {"cod": "400", "message": "AAAAAA is not a city ID"}

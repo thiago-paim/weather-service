@@ -135,3 +135,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Celery config
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 FLOWER_PORT = env("FLOWER_PORT")
+
+
+# Open Weather config
+OPEN_WEATHER_API_KEY = env("OPEN_WEATHER_API_KEY")
