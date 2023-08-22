@@ -84,7 +84,7 @@ DATABASES = {
         "NAME": env("POSTGRES_NAME"),
         "USER": env("POSTGRES_USER"),
         "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": "weather_db",
+        "HOST": "ws_db",
         "PORT": 5432,
     }
 }
@@ -130,3 +130,8 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Celery config
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+FLOWER_PORT = env("FLOWER_PORT")
