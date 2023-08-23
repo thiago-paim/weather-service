@@ -15,6 +15,9 @@ class WeatherRequest(models.Model):
 
     def progress(self):
         total = len(self.cities)
+        if total == 0:
+            return "0%"
+
         finished = 0
         for city in self.cities:
             if "temp" in city and "humidity" in city:

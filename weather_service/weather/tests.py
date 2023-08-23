@@ -43,6 +43,16 @@ class WeatherRequestTest(TestCase):
         ]
         task_mock.assert_has_calls(calls)
 
+    @patch("weather.tasks.get_city_weather.delay")
+    def test_empty_cities_create_open_weather_tasks(self, task_mock):
+        req = WeatherRequest.objects.create(
+            user_id="0",
+            cities=[],
+        )
+
+        req.create_open_weather_tasks()
+        task_mock.assert_not_called()
+
     def test_new_req_progress(self):
         req = WeatherRequest.objects.create(
             user_id="1",
@@ -54,7 +64,7 @@ class WeatherRequestTest(TestCase):
         self.assertEqual(req.progress(), "0%")
 
     def test_incomplete_req_progress(self):
-        incomplete_req = WeatherRequest.objects.create(
+        req = WeatherRequest.objects.create(
             user_id="2",
             cities=[
                 {"city_id": "3439525"},
@@ -62,10 +72,10 @@ class WeatherRequestTest(TestCase):
                 {"temp": 288.28, "city_id": "3440645", "humidity": 95},
             ],
         )
-        self.assertEqual(incomplete_req.progress(), "67%")
+        self.assertEqual(req.progress(), "67%")
 
     def test_complete_req_progress(self):
-        complete_req = WeatherRequest.objects.create(
+        req = WeatherRequest.objects.create(
             user_id="3",
             cities=[
                 {"city_id": "3439525", "temp": 289.99, "humidity": 88},
@@ -74,12 +84,20 @@ class WeatherRequestTest(TestCase):
             ],
         )
 
-        self.assertEqual(complete_req.progress(), "100%")
+        self.assertEqual(req.progress(), "100%")
+
+    def test_empty_cities_req_progress(self):
+        req = WeatherRequest.objects.create(
+            user_id="0",
+            cities=[],
+        )
+
+        self.assertEqual(req.progress(), "0%")
 
 
 class CreateWeatherRequestViewTest(TestCase):
     def setUp(self):
-        self.url = "/weather/"
+        self.url = "/weather/cities"
 
     @patch("django.utils.timezone.now")
     @patch("weather.models.WeatherRequest.create_open_weather_tasks")
