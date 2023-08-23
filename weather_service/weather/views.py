@@ -1,8 +1,6 @@
 import json
 from copy import deepcopy
-from django.shortcuts import render
 from rest_framework import generics
-from weather.models import WeatherRequest
 from weather.serializers import WeatherRequestSerializer
 from weather.values import open_weather_default_cities
 
@@ -21,3 +19,7 @@ class CreateWeatherRequest(generics.CreateAPIView):
             kwargs["data"] = data
 
         return super().get_serializer(*args, **kwargs)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.create_open_weather_tasks()

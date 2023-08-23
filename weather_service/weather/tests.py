@@ -5,13 +5,15 @@ from django.test import TestCase
 from requests.exceptions import HTTPError
 from requests.models import Response
 from rest_framework.test import APIClient
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 
 from weather.clients import open_weather_cli
 from weather.models import WeatherRequest
+from weather.tasks import get_city_weather
 from weather.values import (
     created_weather_request_cities,
     open_weather_success_mock,
+    open_weather_success_2_mock,
     open_weather_invalid_api_key_mock,
     open_weather_city_not_found_mock,
     open_weather_rate_limit_mock,
@@ -20,12 +22,33 @@ from weather.values import (
 mocked_datetime = datetime.datetime(2023, 8, 20, 1, 20, 30, tzinfo=pytz.utc)
 
 
+class WeatherRequestTest(TestCase):
+    def setUp(self):
+        self.req = WeatherRequest.objects.create(
+            user_id="1",
+            cities=[
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
+
+    @patch("weather.tasks.get_city_weather.delay")
+    def test_create_open_weather_tasks(self, task_mock):
+        self.req.create_open_weather_tasks()
+        calls = [
+            call("3439525", self.req.id),
+            call("3439781", self.req.id),
+        ]
+        task_mock.assert_has_calls(calls)
+
+
 class CreateWeatherRequestViewTest(TestCase):
     def setUp(self):
         self.url = "/weather/"
 
     @patch("django.utils.timezone.now")
-    def test_create_weather_request_success(self, datetime_mock):
+    @patch("weather.models.WeatherRequest.create_open_weather_tasks")
+    def test_create_weather_request_success(self, create_tasks_mock, datetime_mock):
         datetime_mock.return_value = mocked_datetime
 
         client = APIClient()
@@ -37,7 +60,6 @@ class CreateWeatherRequestViewTest(TestCase):
         self.assertEqual(response.status_code, 201)
 
         req = WeatherRequest.objects.last()
-        self.assertEqual(req.pk, 1)
         self.assertEqual(req.user_id, "1")
         self.assertEqual(req.date, mocked_datetime)
         self.assertEqual(
@@ -45,7 +67,10 @@ class CreateWeatherRequestViewTest(TestCase):
             created_weather_request_cities,
         )
 
-    def test_repeated_user_id(self):
+        create_tasks_mock.assert_called_once()
+
+    @patch("weather.models.WeatherRequest.create_open_weather_tasks")
+    def test_repeated_user_id(self, create_tasks_mock):
         WeatherRequest.objects.create(
             user_id="1", cities=created_weather_request_cities
         )
@@ -61,7 +86,10 @@ class CreateWeatherRequestViewTest(TestCase):
             {"user_id": ["weather request with this user id already exists."]},
         )
 
-    def test_invalid_user_id(self):
+        create_tasks_mock.assert_not_called()
+
+    @patch("weather.models.WeatherRequest.create_open_weather_tasks")
+    def test_invalid_user_id(self, create_tasks_mock):
         client = APIClient()
         response = client.post(
             self.url,
@@ -72,6 +100,8 @@ class CreateWeatherRequestViewTest(TestCase):
             response.json(),
             {"user_id": ["Ensure this field has no more than 8 characters."]},
         )
+
+        create_tasks_mock.assert_not_called()
 
 
 class GetWeatherRequestViewTest(TestCase):
@@ -145,3 +175,66 @@ class OpenWeatherClientTest(TestCase):
             open_weather_cli.get("city_id")
 
         self.assertEqual(str(e.exception), str(open_weather_rate_limit_mock))
+
+
+class CityWeatherTaskTest(TestCase):
+    def setUp(self):
+        self.req = WeatherRequest.objects.create(
+            user_id="1",
+            cities=[
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
+
+    @patch("weather.clients.OpenWeatherClient.get")
+    def test_city_weather_success(self, client_mock):
+        client_mock.return_value = copy(open_weather_success_mock)
+
+        get_city_weather("3439525", self.req.id)
+        self.req.refresh_from_db()
+
+        client_mock.assert_called_once_with("3439525")
+        self.assertEqual(
+            self.req.cities,
+            [
+                {"city_id": "3439525", "temp": 289.99, "humidity": 88},
+                {"city_id": "3439781"},
+            ],
+        )
+
+    @patch("weather.clients.OpenWeatherClient.get")
+    def test_sequential_city_weather_success(self, client_mock):
+        client_mock.side_effect = [
+            copy(open_weather_success_mock),
+            copy(open_weather_success_2_mock),
+        ]
+
+        get_city_weather("3439525", self.req.id)
+        self.req.refresh_from_db()
+        self.assertEqual(
+            self.req.cities,
+            [
+                {"city_id": "3439525", "temp": 289.99, "humidity": 88},
+                {"city_id": "3439781"},
+            ],
+        )
+
+        get_city_weather("3439781", self.req.id)
+        self.req.refresh_from_db()
+        self.assertEqual(
+            self.req.cities,
+            [
+                {"city_id": "3439525", "temp": 289.99, "humidity": 88},
+                {"city_id": "3439781", "temp": 285.05, "humidity": 64},
+            ],
+        )
+
+        calls = [
+            call("3439525"),
+            call("3439781"),
+        ]
+        client_mock.assert_has_calls(calls)
+
+    def test_open_weather_error(self):
+        ...
