@@ -367,6 +367,33 @@ open_weather_success_mock = {
     "cod": 200,
 }
 
+open_weather_success_2_mock = {
+    "coord": {"lon": -54.3833, "lat": -33.2333},
+    "weather": [
+        {"id": 800, "main": "Clear", "description": "clear sky", "icon": "01d"}
+    ],
+    "base": "stations",
+    "main": {
+        "temp": 285.05,
+        "feels_like": 283.97,
+        "temp_min": 285.05,
+        "temp_max": 285.05,
+        "pressure": 1007,
+        "humidity": 64,
+        "sea_level": 1007,
+        "grnd_level": 1001,
+    },
+    "visibility": 10000,
+    "wind": {"speed": 1.95, "deg": 160, "gust": 2.41},
+    "clouds": {"all": 0},
+    "dt": 1692797363,
+    "sys": {"country": "UY", "sunrise": 1692785219, "sunset": 1692825233},
+    "timezone": -10800,
+    "id": 3439781,
+    "name": "Treinta y Tres",
+    "cod": 200,
+}
+
 open_weather_invalid_api_key_mock = {
     "cod": 401,
     "message": "Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.",
