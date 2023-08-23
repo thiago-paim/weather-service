@@ -24,7 +24,11 @@ mocked_datetime = datetime.datetime(2023, 8, 20, 1, 20, 30, tzinfo=pytz.utc)
 
 class WeatherRequestTest(TestCase):
     def setUp(self):
-        self.req = WeatherRequest.objects.create(
+        pass
+
+    @patch("weather.tasks.get_city_weather.delay")
+    def test_create_open_weather_tasks(self, task_mock):
+        req = WeatherRequest.objects.create(
             user_id="1",
             cities=[
                 {"city_id": "3439525"},
@@ -32,14 +36,45 @@ class WeatherRequestTest(TestCase):
             ],
         )
 
-    @patch("weather.tasks.get_city_weather.delay")
-    def test_create_open_weather_tasks(self, task_mock):
-        self.req.create_open_weather_tasks()
+        req.create_open_weather_tasks()
         calls = [
-            call("3439525", self.req.id),
-            call("3439781", self.req.id),
+            call("3439525", req.id),
+            call("3439781", req.id),
         ]
         task_mock.assert_has_calls(calls)
+
+    def test_new_req_progress(self):
+        req = WeatherRequest.objects.create(
+            user_id="1",
+            cities=[
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
+        self.assertEqual(req.progress(), "0%")
+
+    def test_incomplete_req_progress(self):
+        incomplete_req = WeatherRequest.objects.create(
+            user_id="2",
+            cities=[
+                {"city_id": "3439525"},
+                {"temp": 285.89, "city_id": "3439781", "humidity": 94},
+                {"temp": 288.28, "city_id": "3440645", "humidity": 95},
+            ],
+        )
+        self.assertEqual(incomplete_req.progress(), "67%")
+
+    def test_complete_req_progress(self):
+        complete_req = WeatherRequest.objects.create(
+            user_id="3",
+            cities=[
+                {"city_id": "3439525", "temp": 289.99, "humidity": 88},
+                {"city_id": "3439781", "temp": 285.89, "humidity": 94},
+                {"city_id": "3440645", "temp": 288.28, "humidity": 95},
+            ],
+        )
+
+        self.assertEqual(complete_req.progress(), "100%")
 
 
 class CreateWeatherRequestViewTest(TestCase):
