@@ -4,5 +4,5 @@ Django==4.2.4
 django_environ==0.10.0
 djangorestframework==3.14.0
 flower==2.0.1
+httpx==0.24.1
 psycopg2==2.9.7
-requests==2.31.0

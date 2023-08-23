@@ -2,10 +2,9 @@ import datetime
 import pytz
 from copy import copy
 from django.test import TestCase
-from requests.exceptions import HTTPError
-from requests.models import Response
+from httpx import RequestError
 from rest_framework.test import APIClient
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, call
 
 from weather.clients import open_weather_cli
 from weather.models import WeatherRequest
@@ -221,40 +220,40 @@ class GetWeatherRequestViewTest(TestCase):
 
 
 class OpenWeatherClientTest(TestCase):
-    @patch("weather.clients.requests.request")
+    @patch("weather.clients.httpx.get")
     def test_request_success(self, client_mock):
         client_mock.return_value = mocks.open_weather_success_mock
 
         response = open_weather_cli.get("city_id")
         self.assertEqual(response, mocks.open_weather_success_response)
 
-    @patch("weather.clients.requests.request")
+    @patch("weather.clients.httpx.get")
     def test_invalid_api_key(self, client_mock):
         client_mock.return_value = mocks.open_weather_invalid_api_key_mock
 
-        with self.assertRaises(HTTPError) as e:
+        with self.assertRaises(RequestError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(
             str(e.exception), str(mocks.open_weather_invalid_api_key_response)
         )
 
-    @patch("weather.clients.requests.request")
+    @patch("weather.clients.httpx.get")
     def test_city_not_found(self, client_mock):
         client_mock.return_value = mocks.open_weather_city_not_found_mock
 
-        with self.assertRaises(HTTPError) as e:
+        with self.assertRaises(RequestError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(
             str(e.exception), str(mocks.open_weather_city_not_found_response)
         )
 
-    @patch("weather.clients.requests.request")
+    @patch("weather.clients.httpx.get")
     def test_rate_limit(self, client_mock):
         client_mock.return_value = mocks.open_weather_rate_limit_mock
 
-        with self.assertRaises(HTTPError) as e:
+        with self.assertRaises(RequestError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(str(e.exception), str(mocks.open_weather_rate_limit_response))

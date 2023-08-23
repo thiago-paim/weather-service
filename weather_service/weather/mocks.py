@@ -1,5 +1,4 @@
-from requests.exceptions import HTTPError
-from requests.models import Response
+from httpx import RequestError, Response
 from unittest.mock import Mock
 
 
@@ -236,7 +235,7 @@ open_weather_invalid_api_key_response = {
     "message": "Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.",
 }
 open_weather_invalid_api_key_mock = Mock(spec=Response)
-open_weather_invalid_api_key_mock.raise_for_status.side_effect = HTTPError(
+open_weather_invalid_api_key_mock.raise_for_status.side_effect = RequestError(
     open_weather_invalid_api_key_response
 )
 
@@ -245,7 +244,7 @@ open_weather_city_not_found_response = {
     "message": "AAAAAA is not a city ID",
 }
 open_weather_city_not_found_mock = Mock(spec=Response)
-open_weather_city_not_found_mock.raise_for_status.side_effect = HTTPError(
+open_weather_city_not_found_mock.raise_for_status.side_effect = RequestError(
     open_weather_city_not_found_response
 )
 
@@ -254,6 +253,6 @@ open_weather_rate_limit_response = {
     "message": "Your account is temporary blocked due to exceeding of requests limitation of your subscription type. Please choose the proper subscription https://openweathermap.org/price",
 }
 open_weather_rate_limit_mock = Mock(spec=Response)
-open_weather_rate_limit_mock.raise_for_status.side_effect = HTTPError(
+open_weather_rate_limit_mock.raise_for_status.side_effect = RequestError(
     open_weather_rate_limit_response
 )

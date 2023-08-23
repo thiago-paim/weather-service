@@ -1,5 +1,4 @@
-import json
-import requests
+import httpx
 from django.conf import settings
 
 
@@ -13,7 +12,7 @@ class OpenWeatherClient:
 
     def get(self, city_id):
         params = {"id": city_id, "appid": self.api_key}
-        response = requests.request("GET", self.url, params=params)
+        response = httpx.get(self.url, params=params)
         response.raise_for_status()
         return response.json()
 
