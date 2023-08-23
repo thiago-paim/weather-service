@@ -5,7 +5,7 @@ from weather.serializers import WeatherRequestSerializer
 from weather.values import open_weather_default_cities
 
 
-class CreateWeatherRequest(generics.CreateAPIView):
+class CreateWeatherRequestView(generics.CreateAPIView):
     serializer_class = WeatherRequestSerializer
 
     def get_cities_json(self):
