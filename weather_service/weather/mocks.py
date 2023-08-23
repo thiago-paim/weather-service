@@ -1,4 +1,4 @@
-from httpx import RequestError, Response
+from httpx import Response, Request, HTTPStatusError
 from unittest.mock import Mock
 
 
@@ -235,8 +235,11 @@ open_weather_invalid_api_key_response = {
     "message": "Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.",
 }
 open_weather_invalid_api_key_mock = Mock(spec=Response)
-open_weather_invalid_api_key_mock.raise_for_status.side_effect = RequestError(
-    open_weather_invalid_api_key_response
+open_weather_invalid_api_key_mock.status_code = 401
+open_weather_invalid_api_key_mock.raise_for_status.side_effect = HTTPStatusError(
+    open_weather_invalid_api_key_response,
+    request=Mock(spec=Request),
+    response=open_weather_invalid_api_key_mock,
 )
 
 open_weather_city_not_found_response = {
@@ -244,8 +247,11 @@ open_weather_city_not_found_response = {
     "message": "AAAAAA is not a city ID",
 }
 open_weather_city_not_found_mock = Mock(spec=Response)
-open_weather_city_not_found_mock.raise_for_status.side_effect = RequestError(
-    open_weather_city_not_found_response
+open_weather_city_not_found_mock.status_code = 400
+open_weather_city_not_found_mock.raise_for_status.side_effect = HTTPStatusError(
+    open_weather_city_not_found_response,
+    request=Mock(spec=Request),
+    response=open_weather_city_not_found_mock,
 )
 
 open_weather_rate_limit_response = {
@@ -253,6 +259,9 @@ open_weather_rate_limit_response = {
     "message": "Your account is temporary blocked due to exceeding of requests limitation of your subscription type. Please choose the proper subscription https://openweathermap.org/price",
 }
 open_weather_rate_limit_mock = Mock(spec=Response)
-open_weather_rate_limit_mock.raise_for_status.side_effect = RequestError(
-    open_weather_rate_limit_response
+open_weather_rate_limit_mock.status_code = 429
+open_weather_rate_limit_mock.raise_for_status.side_effect = HTTPStatusError(
+    open_weather_rate_limit_response,
+    request=Mock(spec=Request),
+    response=open_weather_rate_limit_mock,
 )

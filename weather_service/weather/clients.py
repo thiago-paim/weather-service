@@ -12,7 +12,8 @@ class OpenWeatherClient:
 
     def get(self, city_id):
         params = {"id": city_id, "appid": self.api_key}
-        response = httpx.get(self.url, params=params)
+        with httpx.Client() as client:
+            response = client.get(self.url, params=params)
         response.raise_for_status()
         return response.json()
 

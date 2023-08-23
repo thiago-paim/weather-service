@@ -1,8 +1,9 @@
 import datetime
 import pytz
+from celery.exceptions import Retry
 from copy import copy
-from django.test import TestCase
-from httpx import RequestError
+from django.test import TestCase, TransactionTestCase
+from httpx import HTTPStatusError
 from rest_framework.test import APIClient
 from unittest.mock import patch, call
 
@@ -220,46 +221,46 @@ class GetWeatherRequestViewTest(TestCase):
 
 
 class OpenWeatherClientTest(TestCase):
-    @patch("weather.clients.httpx.get")
+    @patch("weather.clients.httpx.Client.get")
     def test_request_success(self, client_mock):
         client_mock.return_value = mocks.open_weather_success_mock
 
         response = open_weather_cli.get("city_id")
         self.assertEqual(response, mocks.open_weather_success_response)
 
-    @patch("weather.clients.httpx.get")
+    @patch("weather.clients.httpx.Client.get")
     def test_invalid_api_key(self, client_mock):
         client_mock.return_value = mocks.open_weather_invalid_api_key_mock
 
-        with self.assertRaises(RequestError) as e:
+        with self.assertRaises(HTTPStatusError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(
             str(e.exception), str(mocks.open_weather_invalid_api_key_response)
         )
 
-    @patch("weather.clients.httpx.get")
+    @patch("weather.clients.httpx.Client.get")
     def test_city_not_found(self, client_mock):
         client_mock.return_value = mocks.open_weather_city_not_found_mock
 
-        with self.assertRaises(RequestError) as e:
+        with self.assertRaises(HTTPStatusError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(
             str(e.exception), str(mocks.open_weather_city_not_found_response)
         )
 
-    @patch("weather.clients.httpx.get")
+    @patch("weather.clients.httpx.Client.get")
     def test_rate_limit(self, client_mock):
         client_mock.return_value = mocks.open_weather_rate_limit_mock
 
-        with self.assertRaises(RequestError) as e:
+        with self.assertRaises(HTTPStatusError) as e:
             open_weather_cli.get("city_id")
 
         self.assertEqual(str(e.exception), str(mocks.open_weather_rate_limit_response))
 
 
-class CityWeatherTaskTest(TestCase):
+class CityWeatherTaskTest(TransactionTestCase):
     def setUp(self):
         self.req = WeatherRequest.objects.create(
             user_id="1",
@@ -318,5 +319,34 @@ class CityWeatherTaskTest(TestCase):
         ]
         client_mock.assert_has_calls(calls)
 
-    def test_open_weather_error(self):
-        ...
+    @patch("weather.clients.httpx.Client.get")
+    def test_open_weather_http_error(self, client_mock):
+        client_mock.return_value = mocks.open_weather_invalid_api_key_mock
+
+        with self.assertRaises(HTTPStatusError):
+            get_city_weather("3439525", self.req.id)
+
+        self.req.refresh_from_db()
+        self.assertEqual(
+            self.req.cities,
+            [
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
+
+    @patch("weather.clients.httpx.Client.get")
+    def test_open_weather_rate_limit_retry(self, client_mock):
+        client_mock.return_value = mocks.open_weather_rate_limit_mock
+
+        with self.assertRaises((HTTPStatusError, Retry)):
+            get_city_weather("3439525", self.req.id)
+
+        self.req.refresh_from_db()
+        self.assertEqual(
+            self.req.cities,
+            [
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
