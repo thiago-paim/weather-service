@@ -1,7 +1,13 @@
 import json
 from copy import deepcopy
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
-from weather.serializers import WeatherRequestSerializer
+from rest_framework.response import Response
+from weather.models import WeatherRequest
+from weather.serializers import (
+    WeatherRequestSerializer,
+    WeatherRequestProgressSerializer,
+)
 from weather.values import open_weather_default_cities
 
 
@@ -23,3 +29,11 @@ class CreateWeatherRequestView(generics.CreateAPIView):
     def perform_create(self, serializer):
         instance = serializer.save()
         instance.create_open_weather_tasks()
+
+
+class GetWeatherRequestProgress(generics.RetrieveAPIView):
+    serializer_class = WeatherRequestProgressSerializer
+
+    def get_object(self):
+        user_id = self.request.query_params.get("user_id")
+        return get_object_or_404(WeatherRequest, user_id=user_id)

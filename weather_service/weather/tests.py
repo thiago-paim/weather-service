@@ -98,14 +98,14 @@ class WeatherRequestTest(TestCase):
 class CreateWeatherRequestViewTest(TestCase):
     def setUp(self):
         self.url = "/weather/cities"
+        self.client = APIClient()
 
     @patch("django.utils.timezone.now")
     @patch("weather.models.WeatherRequest.create_open_weather_tasks")
     def test_create_weather_request_success(self, create_tasks_mock, datetime_mock):
         datetime_mock.return_value = mocked_datetime
 
-        client = APIClient()
-        response = client.post(
+        response = self.client.post(
             self.url,
             {"user_id": "1"},
         )
@@ -128,8 +128,7 @@ class CreateWeatherRequestViewTest(TestCase):
             user_id="1", cities=created_weather_request_cities
         )
 
-        client = APIClient()
-        response = client.post(
+        response = self.client.post(
             self.url,
             {"user_id": "1"},
         )
@@ -143,8 +142,7 @@ class CreateWeatherRequestViewTest(TestCase):
 
     @patch("weather.models.WeatherRequest.create_open_weather_tasks")
     def test_invalid_user_id(self, create_tasks_mock):
-        client = APIClient()
-        response = client.post(
+        response = self.client.post(
             self.url,
             {"user_id": "super_long_user_id"},
         )
@@ -159,19 +157,78 @@ class CreateWeatherRequestViewTest(TestCase):
 
 class GetWeatherRequestViewTest(TestCase):
     def setUp(self):
-        self.url = "/weather"
+        self.url = "/weather/progress"
+        self.client = APIClient()
 
-    def test_get_created_weather_request(self):
-        ...
+    def test_new_weather_request(self):
+        req = WeatherRequest.objects.create(
+            user_id="1",
+            cities=[
+                {"city_id": "3439525"},
+                {"city_id": "3439781"},
+            ],
+        )
 
-    def test_get_finished_weather_request(self):
-        ...
+        response = self.client.get(
+            self.url,
+            {"user_id": req.user_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"progress": "0%"})
+
+    def test_incomplete_weather_request(self):
+        req = WeatherRequest.objects.create(
+            user_id="2",
+            cities=[
+                {"city_id": "3439525"},
+                {"temp": 285.89, "city_id": "3439781", "humidity": 94},
+                {"temp": 288.28, "city_id": "3440645", "humidity": 95},
+            ],
+        )
+
+        response = self.client.get(
+            self.url,
+            {"user_id": req.user_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"progress": "67%"})
+
+    def test_complete_weather_request(self):
+        req = WeatherRequest.objects.create(
+            user_id="3",
+            cities=[
+                {"city_id": "3439525", "temp": 289.99, "humidity": 88},
+                {"city_id": "3439781", "temp": 285.89, "humidity": 94},
+                {"city_id": "3440645", "temp": 288.28, "humidity": 95},
+            ],
+        )
+
+        response = self.client.get(
+            self.url,
+            {"user_id": req.user_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"progress": "100%"})
 
     def test_empty_user_id(self):
-        ...
+        response = self.client.get(
+            self.url,
+        )
 
-    def test_invalid_user_id(self):
-        ...
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not found."})
+
+    def test_user_id_not_found(self):
+        response = self.client.get(
+            self.url,
+            {"user_id": "NON_EXISTING_USER_ID"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not found."})
 
 
 class OpenWeatherClientTest(TestCase):
