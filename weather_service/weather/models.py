@@ -2,6 +2,8 @@ from django.db import models
 
 
 class WeatherRequest(models.Model):
+    """Represents a user request for collecting weather data for a list of cities"""
+
     user_id = models.CharField(max_length=8, unique=True)
     date = models.DateTimeField(auto_now_add=True)
     cities = models.JSONField()

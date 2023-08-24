@@ -6,6 +6,8 @@ OPEN_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 
 class OpenWeatherClient:
+    """Helper class for sending requests to Open Weather API"""
+
     def __init__(self, url, api_key):
         self.url = url
         self.api_key = api_key

@@ -4,15 +4,15 @@
 
 This project setups a service API for collecting city weather data from [Open Weather API](https://openweathermap.org/current#cityid), and consist of several services running on Docker containers:
 
-* **Weather Service API**
+* Weather Service API
 
-* **PostgreSQL Database**
+* PostgreSQL Database
 
-* **Celery Worker**
+* Celery Worker
 
-* **Celery Flower**
+* Celery Flower
 
-* **RabbitMQ**
+* RabbitMQ
 
 
 It implements two endpoints:
@@ -29,7 +29,7 @@ It implements two endpoints:
 
 ## How to setup
 
-* Setup a local `.env` file by creating a copy of the sample file:
+* Create a local `.env` file by creating a copy of the sample file:
 
     ```bash
     cd weather_service
@@ -38,7 +38,7 @@ It implements two endpoints:
 
 * Update the `OPEN_WEATHER_API_KEY` with your Open Weather API key
     
-    * You can get one by [creating a free account on Open Weather](https://home.openweathermap.org/users/sign_up)).
+    * Get one by [creating a free account on Open Weather](https://home.openweathermap.org/users/sign_up).
 
 
 * Ensure you have [Docker](https://docs.docker.com/engine/) up and running, and then build the containers: 
@@ -50,7 +50,7 @@ It implements two endpoints:
 
 ## How to run
 
-* Start the containers and the API run on http://localhost:8000/
+* Start the containers, and the API will run on http://localhost:8000/
 
     ```bash
     docker compose up -d
@@ -111,7 +111,9 @@ It implements two endpoints:
     docker exec -it weather_service coverage report
     ```
 
-## Open Weather rate limit
+
+## Extra
+### Open Weather rate limit
 
 Open Weather free account has a 60 request/minute limit. This app relies on two strategies to avoid going over it:
 
@@ -123,3 +125,6 @@ Open Weather free account has a 60 request/minute limit. This app relies on two 
 
     * When a request to Open Weather fails with a 429 HTTP error, it will be retried with increasing wait times to avoid storming their API with requests
 
+### Django Admin
+
+Django comes with a default Admin app that allows easy management of the models data. It is not necessary for this app to run and can be easily disabled in the future, but was kept for now as it helps visualizing the data during development.
