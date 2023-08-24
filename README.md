@@ -1,74 +1,125 @@
 # weather-service
 
-This project setups a service API for collecting city weather data from [Open Weather API](https://openweathermap.org/current#cityid). 
+## Summary
+
+This project setups a service API for collecting city weather data from [Open Weather API](https://openweathermap.org/current#cityid), and consist of several services running on Docker containers:
+
+* **Weather Service API**
+
+* **PostgreSQL Database**
+
+* **Celery Worker**
+
+* **Celery Flower**
+
+* **RabbitMQ**
+
+
+It implements two endpoints:
+
+* `/weather/cities` 
+
+    * Receives a POST request with an `user_id`, stores it in the DB, and then triggers async tasks for fetching city weather data from Open Weather
+    * The collected data is stored in a `JSONField` in the DB.
+
+* `/weather/progress`
+
+    * Receives a GET request with an `user_id` url param and returns the progress cities weather data collection
+
 
 ## How to setup
 
-### Environment setup
+* Setup a local `.env` file by creating a copy of the sample file:
 
-This project uses `django_environ` to manage environment variables, so you must setup a local `.env` file. You should create a copy of the sample file:
+    ```bash
+    cd weather_service
+    cp .env.sample .env
+    ```
 
-```
-cd weather_service
-cp .env.sample .env
-```
-
-Then you must update the `OPEN_WEATHER_API_KEY` with your own Open Weather API key (you can get one by [creating a free account on Open Weather](https://home.openweathermap.org/users/sign_up)).
+* Update the `OPEN_WEATHER_API_KEY` with your Open Weather API key
+    
+    * You can get one by [creating a free account on Open Weather](https://home.openweathermap.org/users/sign_up)).
 
 
-### Docker setup
-Ensure you have [Docker](https://docs.docker.com/engine/) up and running.
-If it's the first time you're running the project, you must build the containers: 
+* Ensure you have [Docker](https://docs.docker.com/engine/) up and running, and then build the containers: 
 
+    ```bash
     docker compose build
+    ```
 
 
 ## How to run
 
-### Starting the app
+* Start the containers and the API run on http://localhost:8000/
 
-After following the steps above, all you need to do is start the containers: 
-
+    ```bash
     docker compose up -d
+    ```
+    
 
-The app should be running on http://127.0.0.1:8000/
+* To start collecting weather data:
 
-### Using the app
+    ```bash
+    curl -d "user_id=999" -X POST http://localhost:8000/weather/cities
+    ```
 
-* Endpoints:
+* To check the collected data progress:
 
-    * Get Cities: *POST* http://127.0.0.1:8000/weather/
+    ```bash
+    curl -X GET http://localhost:8000/weather/progress?user_id=999
+    ```
 
+* To stop your app:
 
-* Admin: http://127.0.0.1:8000/admin/
-
-* Celery Flower: http://127.0.0.1:8888/
-
-
-### Stopping the app
-
-For stopping your app, use the command:
-
+    ```bash
     docker compose down
+    ```
+
+### Monitoring
+
+* In case you want a closer look on the database objects, you can use Django's builtin Admin app.
+
+    * Create a super user:
+
+        ```bash
+        docker exec -it weather_service python3 manage.py createsuperuser
+        ```
+        
+    * Then use it to login into the admin: http://localhost:8000/admin/
+
+
+* To monitor running tasks check Celery Flower: http://localhost:8888/
+
+* In case you want to stop all the tasks, you can purge the tasks queue:
+
+    ```bash
+    docker exec -it celery celery -A weather_service purge
+    ```
 
 
 ## How to test
 
-After you have your application up and running, you can run the tests inside the container either with Django's management command: 
+* After the app is running, you can test it with Coverage: 
 
-    docker exec -it weather_service python3 manage.py test
-
-Or with Coverage: 
-
+    ```bash
     docker exec -it weather_service coverage run manage.py test
+    ```
 
-For checking the test coverage report: 
+* To check the test coverage report: 
 
+    ```bash
     docker exec -it weather_service coverage report
+    ```
 
+## Open Weather rate limit
 
-## Troubleshooting
+Open Weather free account has a 60 request/minute limit. This app relies on two strategies to avoid going over it:
 
-In case you need to stop all the tasks, you can purge Celery's tasks queue:
+* Using the `rate_limit` [Celery task param](https://docs.celeryq.dev/en/stable/userguide/tasks.html#Task.rate_limit) to ensure a worker won't execute it more than it should.
 
-    docker exec -it celery celery -A weather_service purge
+    * This param must be updated in the future if scaling workers becomes necessary
+
+* Task retries with exponential backoff
+
+    * When a request to Open Weather fails with a 429 HTTP error, it will be retried with increasing wait times to avoid storming their API with requests
+

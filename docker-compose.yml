@@ -47,7 +47,7 @@ services:
   ws_flower:
     container_name: flower
     image: mher/flower
-    command: celery flower --persistent=True
+    command: celery flower
     ports:
       - 8888:8888
     env_file:
