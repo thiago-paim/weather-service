@@ -82,7 +82,7 @@ It implements two endpoints:
     * Create a super user:
 
         ```bash
-        docker exec -it weather_service python3 manage.py createsuperuser
+        docker exec -it weather-service-django-1 python3 manage.py createsuperuser
         ```
         
     * Then use it to login into the admin: http://localhost:8000/admin/
@@ -93,7 +93,7 @@ It implements two endpoints:
 * In case you want to stop all the tasks, you can purge the tasks queue:
 
     ```bash
-    docker exec -it celery celery -A weather_service purge
+    docker exec -it weather-service-celery-1 celery -A weather_service purge
     ```
 
 
@@ -102,13 +102,13 @@ It implements two endpoints:
 * After the app is running, you can test it with Coverage: 
 
     ```bash
-    docker exec -it weather_service coverage run manage.py test
+    docker exec -it weather-service-django-1 coverage run manage.py test
     ```
 
 * To check the test coverage report: 
 
     ```bash
-    docker exec -it weather_service coverage report
+    docker exec -it weather-service-django-1 coverage report
     ```
 
 

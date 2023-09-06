@@ -2,8 +2,7 @@ version: '3'
 
 services:
   
-  ws_db:
-    container_name: db
+  db:
     image: postgres:13
     volumes:
       - ./data/db:/var/lib/postgresql/data
@@ -12,15 +11,13 @@ services:
     ports:
       - 5432:5432
 
-  ws_rabbitmq:
-    container_name: rabbitmq
+  rabbitmq:
     image: rabbitmq
     ports:
       - 5672:5672
       - 15672:15672
 
-  weather_service:
-    container_name: weather_service
+  django:
     build:
       context: ./weather_service
     command: sh -c "python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
@@ -29,10 +26,9 @@ services:
     ports:
       - 8000:8000
     depends_on:
-      - ws_db
+      - db
 
-  ws_celery:
-    container_name: celery
+  celery:
     build:
       context: ./weather_service
     command: celery -A weather_service worker
@@ -41,11 +37,10 @@ services:
     env_file:
       - ./weather_service/.env
     depends_on:
-      - ws_db
-      - ws_rabbitmq
+      - db
+      - rabbitmq
 
-  ws_flower:
-    container_name: flower
+  flower:
     image: mher/flower
     command: celery flower
     ports:
@@ -53,4 +48,4 @@ services:
     env_file:
       - ./weather_service/.env
     depends_on:
-      - ws_rabbitmq
+      - rabbitmq
